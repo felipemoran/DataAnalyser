@@ -1,0 +1,2 @@
+network_time,rpi_time,network_reference,rpi_reference,instant_drift_coefficient,ema_drift_coefficient,drift_coefficient
+1025667755.967793,1509096676.030872,1025667750.951592,1509096671.014761,0.9999820812993786,0.9999946243898135,0.9999914886172047
