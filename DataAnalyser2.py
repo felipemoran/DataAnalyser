@@ -60,77 +60,78 @@ unit_conversion = {
     'ns': 10 ** (-3),
 }
 
-start = time.time()
 
-input_filename = 'Data/gps_mote_long_gologic.csv'
-output_filename = input_filename.rsplit('.',1)
-output_filename[0] += '_output'
-output_filename_alt = output_filename[0] + '_alt.csv'
-output_filename = output_filename[0] + '-3.0.csv'
+def process_gologic_csv(filename):
+    start = time.time()
 
+    input_filename = 'Data/' + filename + '_gologic.csv'
+    output_filename = input_filename.rsplit('.', 1)
+    output_filename[0] += '_output'
+    output_filename = output_filename[0] + '-3.0.csv'
 
-with open(input_filename, 'r') as raw_file, open(output_filename, 'w') as output_file:
-    reader = csv.reader(raw_file)
-    writer = csv.writer(output_file)
-    next(reader)  # skip header row
+    with open(input_filename, 'r') as raw_file, open(output_filename, 'w') as output_file:
+        reader = csv.reader(raw_file)
+        writer = csv.writer(output_file)
+        next(reader)  # skip header row
 
-    writer.writerow(['delay_us', 'accumulated_us'])
+        writer.writerow(['delay_us', 'accumulated_us'])
 
-    accumulated_us = 0
+        accumulated_us = 0
 
-    previous_row = next(reader)
-    reading_history = [0, 0, 0, 0]
+        previous_row = next(reader)
+        reading_history = [0, 0, 0, 0]
 
-    late_counter = 0
-    early_counter = 0
-    row_counter = 0
-    alert_counter = 0
+        late_counter = 0
+        early_counter = 0
+        row_counter = 0
+        alert_counter = 0
 
-    for row in reader:
-        row_counter += 1
+        for row in reader:
+            row_counter += 1
 
-        # TODO: implement first few rows skip
+            reading_history.append(int(row[1]))
+            reading_history.pop(0)
 
-        reading_history.append(int(row[1]))
-        reading_history.pop(0)
+            new_action = action_decision_table[reading_history[1]][reading_history[2]][reading_history[3]]
 
-        new_action = action_decision_table[reading_history[1]][reading_history[2]][reading_history[3]]
+            if SKIP_FIRST_ROWS and row_counter < ROWS_TO_SKIP:
+                continue
 
-        if SKIP_FIRST_ROWS and row_counter < ROWS_TO_SKIP:
-            continue
+            duration = float(previous_row[2])*unit_conversion[previous_row[3]]
+            previous_row = row
 
-        duration = float(previous_row[2])*unit_conversion[previous_row[3]]
-        previous_row = row
+            if new_action == ACTION_GOING_UP_LATE or new_action == ACTION_GOING_DOWN_LATE:
+                timing = LATE
+                late_counter += 1
+            elif new_action == ACTION_GOING_UP_EARLY or new_action == ACTION_GOING_DOWN_EARLY:
+                timing = EARLY
+                early_counter += 1
 
-        if new_action == ACTION_GOING_UP_LATE or new_action == ACTION_GOING_DOWN_LATE:
-            timing = LATE
-            late_counter += 1
-        elif new_action == ACTION_GOING_UP_EARLY or new_action == ACTION_GOING_DOWN_EARLY:
-            timing = EARLY
-            early_counter += 1
+            elif new_action == ACTION_TRANSITION:
+                if reading_history[0] == reading_history[2]:
+                    # seems to be some inconsistent data. I'll just flag as it was
+                    new_action = ACTION_ALERT
+                else:
+                    new_action = ACTION_PASS
 
-        elif new_action == ACTION_TRANSITION:
-            if reading_history[0] == reading_history[2]:
-                # seems to be some inconsistent data. I'll just flag as it was
-                new_action = ACTION_ALERT
-            else:
-                new_action = ACTION_PASS
+            if new_action == ACTION_ALERT:
+                alert_counter += 1
+                text = "Going to inconsistent state! Instant {}, counter {}/{} ({:.2f}%), history 0:{} 1:{} 2:{} ".format(us2string(accumulated_us), alert_counter, row_counter, alert_counter/row_counter*100, reading_history[0], reading_history[1], reading_history[2])
+                print(text)
+                timing = None
+            elif new_action == ACTION_PASS:
+                timing = None
 
-        if new_action == ACTION_ALERT:
-            alert_counter += 1
-            text = "Going to inconsistent state! Instant {}, counter {}/{} ({:.2f}%), history 0:{} 1:{} 2:{} ".format(us2string(accumulated_us), alert_counter, row_counter, alert_counter/row_counter*100, reading_history[0], reading_history[1], reading_history[2])
-            print(text)
-            timing = None
-        elif new_action == ACTION_PASS:
-            timing = None
+            accumulated_us += duration
 
-        accumulated_us += duration
+            if timing is None:
+                continue
 
-        if timing is None:
-            continue
+            delay_us = timing * duration
+            writer.writerow([delay_us, accumulated_us])
 
-        delay_us = timing * duration
-        writer.writerow([delay_us, accumulated_us])
+    elapsed = time.time() - start
+    print("{} rows processed in {:.2f} seconds".format(row_counter, elapsed))
 
-elapsed = time.time() - start
-print("{} rows processed in {:.2f} seconds".format(row_counter, elapsed))
+if __name__ == "__main__":
+    process_gologic_csv('gps_mote_long')
