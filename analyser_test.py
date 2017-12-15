@@ -3,10 +3,10 @@ from analyser import *
 
 
 @pytest.mark.parametrize("symbol, expected", [
-    (Symbol("00", 10), None),
-    (Symbol("01", 10), None),
-    (Symbol("10", 10), None),
-    (Symbol("11", 10), None)
+    (Symbol("00", 10), SequenceResult(None, None)),
+    (Symbol("01", 10), SequenceResult(None, None)),
+    (Symbol("10", 10), SequenceResult(None, None)),
+    (Symbol("11", 10), SequenceResult(None, None))
 ])
 def test_add_first_symbol_to_sequence(symbol, expected):
     sequence = Sequence()
@@ -14,10 +14,10 @@ def test_add_first_symbol_to_sequence(symbol, expected):
 
 
 @pytest.mark.parametrize("symbol_list, expected", [
-    ([Symbol("00", 10), Symbol("01", 11), Symbol("11", 12)], 11),
-    ([Symbol("00", 10), Symbol("10", 13), Symbol("11", 12)], 13),
-    ([Symbol("11", 10), Symbol("01", 14), Symbol("00", 12)], 14),
-    ([Symbol("11", 10), Symbol("10", 15), Symbol("00", 12)], 15),
+    ([Symbol("00", 10), Symbol("01", 11), Symbol("11", 12)], SequenceResult(False, -11)),
+    ([Symbol("00", 10), Symbol("10", 13), Symbol("11", 12)], SequenceResult(False, 13)),
+    ([Symbol("11", 10), Symbol("01", 14), Symbol("00", 12)], SequenceResult(False, 14)),
+    ([Symbol("11", 10), Symbol("10", 15), Symbol("00", 12)], SequenceResult(False, -15)),
 ])
 def test_add_valid_delay(symbol_list, expected):
     sequence = Sequence()
@@ -30,8 +30,8 @@ def test_add_valid_delay(symbol_list, expected):
 
 
 @pytest.mark.parametrize("symbol_list, expected", [
-    ([Symbol("00", 10), Symbol("11", 11)], 0),
-    ([Symbol("11", 10), Symbol("00", 13)], 0),
+    ([Symbol("00", 10), Symbol("11", 11)], SequenceResult(False, 0)),
+    ([Symbol("11", 10), Symbol("00", 13)], SequenceResult(False, 0)),
 ])
 def test_add_instantaneous_delay(symbol_list, expected):
     sequence = Sequence()
@@ -44,10 +44,10 @@ def test_add_instantaneous_delay(symbol_list, expected):
 
 
 @pytest.mark.parametrize("symbol_list, expected", [
-    ([Symbol("00", 10), Symbol("01", 11), Symbol("10", 11), Symbol("11", 12)], None),
-    ([Symbol("00", 10), Symbol("10", 13), Symbol("01", 11), Symbol("11", 12)], None),
-    ([Symbol("11", 10), Symbol("01", 14), Symbol("10", 11), Symbol("00", 12)], None),
-    ([Symbol("11", 10), Symbol("10", 15), Symbol("01", 11), Symbol("00", 12)], None),
+    ([Symbol("00", 10), Symbol("01", 11), Symbol("10", 11), Symbol("11", 12)], SequenceResult(True, None)),
+    ([Symbol("00", 10), Symbol("10", 13), Symbol("01", 11), Symbol("11", 12)], SequenceResult(True, None)),
+    ([Symbol("11", 10), Symbol("01", 14), Symbol("10", 11), Symbol("00", 12)], SequenceResult(True, None)),
+    ([Symbol("11", 10), Symbol("10", 15), Symbol("01", 11), Symbol("00", 12)], SequenceResult(True, None)),
 ])
 def test_add_invalid_delay(symbol_list, expected):
     sequence = Sequence()
