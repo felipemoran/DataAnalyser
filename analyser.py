@@ -7,7 +7,7 @@ from collections import namedtuple
 def us2string(us):
     hours, rem = divmod(us/1000000, 3600)
     minutes, seconds = divmod(rem, 60)
-    return"{:0>2}h{:0>2}m{:02.0f}s".format(int(hours), int(minutes), seconds)
+    return"{:0>2}h{:0>2}m{:02.6f}s".format(int(hours), int(minutes), seconds)
 
 
 class Symbol:
@@ -28,6 +28,12 @@ SequenceResult = namedtuple("SequenceResult", ["is_invalid", "duration"])
 class Sequence:
     def __init__(self):
         self.list = []
+
+    def __str__(self):
+        return_str = ""
+        for item in self.list:
+            return_str += "(" + item.value + ": " + str(item.duration) + ") "
+        return return_str
 
     def get_last(self):
         if len(self.list) != 0:
@@ -121,6 +127,14 @@ class Analyser:
             accumulated_duration = 0
             row_counter = 0
             # TODO: change double loop by single loop with product(rows, columns)
+
+            counter_invalid = {}
+            counter_total = {}
+            for column in state_columns:
+                counter_invalid[column] = 0
+                counter_total[column] = 0
+
+
             for row in reader:
                 row_counter += 1
                 duration = float(row[self.duration_column]) * self.unit_conversion[row[self.unit_column]]
@@ -130,15 +144,51 @@ class Analyser:
                     symbol = Symbol(row[column], duration)
                     result = self.sequences[column].add_and_analyse(symbol)
                     if result.is_invalid:
-                        print("Invalid sequence!")
+                        counter_invalid[column] += 1
+                        counter_total[column] += 1
+
+                        # print("Invalid sequence! Column {}".format(column))
+                        # for column in self.state_columns:
+                        #     print("{} {}/{} : {:.2f}%  ".format(column, counter_invalid[column], counter_total[column], counter_invalid[column]/counter_total[column]*100), end='')
+                        # print()
+
                     elif result.duration is not None:
+                        counter_total[column] += 1
                         self.results[column].append(result.duration)
+
+                        # Debugging
+                if column == "tsch_arduino":
+                    if int(len(self.results["tsch_arduino"])) == 109694:
+                        break
+                        print("Row {} : {}".format(row["Sample#"], us2string(accumulated_duration)))
+                        #
+                        #     if int(len(self.results["gps_arduino"])) == 3925:
+                        #         # break
+                        #         print("Row {} : {}".format(row["Sample#"], us2string(accumulated_duration)))
+                        #
+                        #     if int(len(self.results["gps_arduino"])) == 7800:
+                        #         # break
+                        #         print("Row {} : {}".format(row["Sample#"], us2string(accumulated_duration)))
+                        #
+                        #     if int(len(self.results["gps_arduino"])) == 8200:
+                        #         # break
+                        #         print("Row {} : {}".format(row["Sample#"], us2string(accumulated_duration)))
+
+                # Debugging
+                # if int(row["Sample#"]) == 650400:
+                #     print("--- Row {} : {}".format(row["Sample#"], us2string(accumulated_duration)))
+                #     # break
+                # if len(self.results["tsch_arduino"]) == 106000:
+                #     break
 
             for column in self.state_columns:
                 self.write_list_to_file(self.filename, column, self.results[column])
 
         elapsed = time.time() - start
         print("{} rows processed in {:.2f} seconds".format(row_counter, elapsed))
+
+        for column in self.state_columns:
+            print("Column {} has {} samples".format(column, len(self.results[column])))
 
         print("Total test duration: {}".format(us2string(accumulated_duration)))
 
@@ -155,8 +205,9 @@ class Analyser:
 
 
 if __name__ == "__main__":
-    filename = "Data/composed_log.csv"
-    state_columns = ["mote", "gps_pure", "gps_rpi"]
+    filename = "Data/2018-1-22_1.csv"
+    # state_columns = ["gps_pure", "gps_rpi", "tsch_arduino", "mote"]
+    state_columns = ["tsch_arduino"]
     duration_column = "SampleTime"
     unit_column = "units"
 
