@@ -157,10 +157,10 @@ class Analyser:
                         self.results[column].append(result.duration)
 
                         # Debugging
-                if column == "tsch_arduino":
-                    if int(len(self.results["tsch_arduino"])) == 109694:
-                        break
-                        print("Row {} : {}".format(row["Sample#"], us2string(accumulated_duration)))
+                        # if column == "tsch_arduino":
+                        #     if int(len(self.results["tsch_arduino"])) == 109694:
+                        #         break
+                        #         print("Row {} : {}".format(row["Sample#"], us2string(accumulated_duration)))
                         #
                         #     if int(len(self.results["gps_arduino"])) == 3925:
                         #         # break
@@ -205,7 +205,7 @@ class Analyser:
 
 
 if __name__ == "__main__":
-    filename = "Data/2018-1-22_1.csv"
+    filename = "old_data/2018-1-22_1.csv"
     # state_columns = ["gps_pure", "gps_rpi", "tsch_arduino", "mote"]
     state_columns = ["tsch_arduino"]
     duration_column = "SampleTime"
